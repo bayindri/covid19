@@ -1,12 +1,13 @@
 #start session
-import findspark
+
+'''import findspark
 findspark.init('/opt/cloudera/parcels/SPARK2/lib/spark2')
 #from pyspark import SparkContext
 #from pyspark.sql import SparkSession, SQLContext
-from pyspark.sql import SparkSession
+from pyspark.sql import SparkSession'''
 from timeit import default_timer as timer
 #from modules import claims_sql
-from pyspark.sql.functions import col, round
+#from pyspark.sql.functions import col, round
 
 import sys
 import os
@@ -255,7 +256,7 @@ def get_testing(filedata,dates):
 
             p1 = p1.split('\n')
             p1 = [m for m in p1 if m != '']
-            print(len(p1),p1)
+            #print(len(p1),p1)
             #print(p1)
         elif tbl_cnt == 2:
             if day not in ('3-09','3-10','3-11','3-12','3-13','3-14','3-15'):
@@ -300,7 +301,7 @@ def get_testing(filedata,dates):
         data = data + data_dict_dt[day]['testing']
         #print(data_dict_dt[day])
     df_data = pd.DataFrame(data,columns=['Day','Laboratory','Tested_Positive','Total_Tested'])
-    print(df_data)
+    #print(df_data)
     #pp.pprint(data_dict_dt)
     df_data.to_csv(os.getcwd()+'/analysis/output/covid_19_testing_mass_gov.csv')
     return df_data
@@ -499,180 +500,8 @@ def getMassGovData(file_data):
     #exposure = get_exposure(file_data,dates)
     deaths = get_deaths(file_data,dates,county,hosp)
 
-def getADTData(spark,uid,pwd):
-    print(uid,pwd)
-    sql = '''
-    (select * from V_BCBSMA_ADT_CMT_FNL) a'''
-    #uid = 'abaner02'
-    df = spark \
-            .read \
-            .format("jdbc") \
-            .option("url", "jdbc:netezza://bntzp01z.bcbsma.com:5480/PDWAPPRP") \
-            .option("user", uid) \
-            .option("password", pwd) \
-            .option("driver", "org.netezza.Driver") \
-            .option("dbtable", sql) \
-            .load()
-
-    df.createOrReplaceTempView('ADT_DATA')
-
-    # load county - zip mapping
-    df_county_zip = pd.read_csv(os.getcwd()+'/analysis/input/county_zip_code_list.csv',sep='|',dtype={'Zip':'str'})
-    spark.createDataFrame(df_county_zip).createOrReplaceTempView('COUNTY_ZIP')
-    print(df_county_zip.head())
-
-    sql = '''
-    select a.*,
-        SUBSTRING(a.CURR_TIMESTAMP, 1, 10) AS yyyy_mm_dd,
-        SUBSTRING(a.CURR_TIMESTAMP, 1, 4) AS yyyy,
-        SUBSTRING(a.CURR_TIMESTAMP, 1, 7) AS yyyy_mm,
-        SUBSTRING(a.CURR_TIMESTAMP, 6, 5) AS mm_dd,
-        b.County as patient_county,
-        c.County as facility_county
-        from ADT_DATA as a
-            left join COUNTY_ZIP b
-                on a.PATIENT_ZIP_CODE = b.Zip
-            left join COUNTY_ZIP c
-                on a.ENCOUNTER_FACILITY_ZIP = c.Zip
-    '''
-    df = spark.sql(sql)
-    df.createOrReplaceTempView('ADT_DATA_COUNTY')
-    df.write.mode("overwrite").format('parquet').saveAsTable('analytics.w5_covid_19_ADT_Netezza_'+uid)
-
-    sql = '''
-    select distinct
-        mm_dd as Day,
-        yyyy_mm_dd,
-        facility_county,
-        ENCOUNTER_FACILITY_NAME,
-        ENCOUNTER_FACILITY_STREET,
-        ENCOUNTER_FACILITY_CITY,
-        ENCOUNTER_FACILITY_STATE,
-        ENCOUNTER_FACILITY_ZIP,
-        count(distinct member_id) as mem_cnt
-    from ADT_DATA_COUNTY
-       where yyyy = '2020' and ENCOUNTER_FACILITY_STATE = 'MA'
-    group by
-       mm_dd,
-       yyyy_mm_dd,
-       facility_county,
-       ENCOUNTER_FACILITY_NAME,
-       ENCOUNTER_FACILITY_STREET,
-       ENCOUNTER_FACILITY_CITY,
-       ENCOUNTER_FACILITY_STATE,
-       ENCOUNTER_FACILITY_ZIP
-    '''
-    df=spark.sql(sql)
-    df.createOrReplaceTempView('ADT_COUNTY_FACILITY')
-    #df.write.mode("overwrite").format('parquet').saveAsTable('analytics.w5_covid_19_ADT_Facilities_'+uid)
-    #df.toPandas().to_csv('facilties_county_level_ADT_by_date.csv')
-    #len(df.toPandas()), df.toPandas().head()
-
-    sql = '''
-    select distinct
-        mm_dd as Day,
-        yyyy_mm_dd,
-        facility_county,
-        ENCOUNTER_FACILITY_NAME,
-        ENCOUNTER_FACILITY_STREET,
-        ENCOUNTER_FACILITY_CITY,
-        ENCOUNTER_FACILITY_STATE,
-        ENCOUNTER_FACILITY_ZIP,
-        count(distinct member_id) as covid19_related_mem_cnt
-    from ADT_DATA_COUNTY
-       where yyyy = '2020' and ENCOUNTER_FACILITY_STATE = 'MA' and
-       encounter_diagnosis like '%COVID%' or encounter_cheif_complaint like '%COVID%'
-        or encounter_diagnosis like '%covid%' or encounter_cheif_complaint like '%covid%'
-        or encounter_diagnosis like '%CORONAV%' or encounter_cheif_complaint like '%CORONAV%'
-        or encounter_diagnosis like '%coronav%' or encounter_cheif_complaint like '%coronav%'
-        or encounter_diagnosis like '%CORONA V%' or encounter_cheif_complaint like '%CORONA V%'
-        or encounter_diagnosis like '%corona v%' or encounter_cheif_complaint like '%corona v%'
-        or encounter_diagnosis like '%Fever%' or encounter_cheif_complaint like '%Fever%'
-        or encounter_diagnosis like '%fever%' or encounter_cheif_complaint like '%fever%'
-        or encounter_diagnosis like '%Flu%' or encounter_cheif_complaint like '%Flu%'
-        or encounter_diagnosis like '%flu%' or encounter_cheif_complaint like '%flu%'
-        or encounter_diagnosis like '%Cough%' or encounter_cheif_complaint like '%Cough%'
-        or encounter_diagnosis like '%cough%' or encounter_cheif_complaint like '%cough%'
-        or encounter_diagnosis like '%Viral%' or encounter_cheif_complaint like '%Viral%'
-        or encounter_diagnosis like '%viral%' or encounter_cheif_complaint like '%viral%'
-        or encounter_diagnosis like '%Viral Ill%' or encounter_cheif_complaint like '%Viral Ill%'
-        or encounter_diagnosis like '%viral ill%' or encounter_cheif_complaint like '%viral ill%'
-
-        or encounter_diagnosis like '%pain%' or encounter_cheif_complaint like '%pain%'
-        or encounter_diagnosis like '%Pain%' or encounter_cheif_complaint like '%Pain%'
-        or encounter_diagnosis like '%Shortness of breath%' or encounter_cheif_complaint like '%Shortness of breath%'
-        or encounter_diagnosis like '%Shortness Of breath%' or encounter_cheif_complaint like '%Shortness Of breath%'
-        or encounter_diagnosis like '%shortness of breath%' or encounter_cheif_complaint like '%shortness of breath%'
-
-        or encounter_diagnosis like '%breathing%' or encounter_cheif_complaint like '%breathing%'
-        or encounter_diagnosis like '%Breathing%' or encounter_cheif_complaint like '%Breathing%'
-
-        or encounter_diagnosis like '%Ache%' or encounter_cheif_complaint like '%Ache%'
-        or encounter_diagnosis like '%ache%' or encounter_cheif_complaint like '%ache%'
-        or encounter_diagnosis like '%Nasal Congestion%' or encounter_cheif_complaint like '%Nasal Congestion%'
-        or encounter_diagnosis like '%nasal congestion%' or encounter_cheif_complaint like '%nasal congestion%'
-        or encounter_diagnosis like '%Sore Throat%' or encounter_cheif_complaint like '%Sore Throat%'
-        or encounter_diagnosis like '%sore throat%' or encounter_cheif_complaint like '%sore throat%'
-        or encounter_diagnosis like '%Diarrhea%' or encounter_cheif_complaint like '%Diarrhea%'
-        or encounter_diagnosis like '%diarrhea%' or encounter_cheif_complaint like '%diarrhea%'
-
-    group by
-       mm_dd,
-       yyyy_mm_dd,
-       facility_county,
-       ENCOUNTER_FACILITY_NAME,
-       ENCOUNTER_FACILITY_STREET,
-       ENCOUNTER_FACILITY_CITY,
-       ENCOUNTER_FACILITY_STATE,
-       ENCOUNTER_FACILITY_ZIP
-    '''
-    df=spark.sql(sql)
-    df.createOrReplaceTempView('ADT_COUNTY_FACILITY_COVID19')
-
-    sql = '''
-    select a.*, b.covid19_related_mem_cnt
-    from ADT_COUNTY_FACILITY a
-        left join ADT_COUNTY_FACILITY_COVID19 b
-            on a.yyyy_mm_dd = b.yyyy_mm_dd
-                and a.facility_county = b.facility_county
-                and a.ENCOUNTER_FACILITY_NAME = b.ENCOUNTER_FACILITY_NAME
-                and a.ENCOUNTER_FACILITY_STREET = b.ENCOUNTER_FACILITY_STREET
-                and a.ENCOUNTER_FACILITY_CITY = b.ENCOUNTER_FACILITY_CITY
-                and a.ENCOUNTER_FACILITY_STATE = b.ENCOUNTER_FACILITY_STATE
-                and a.ENCOUNTER_FACILITY_ZIP = b.ENCOUNTER_FACILITY_ZIP
-
-    '''
-    df=spark.sql(sql)
-    df.createOrReplaceTempView('ADT_COUNTY_FACILITY_COVID19')
-    df.write.mode("overwrite").format('parquet').saveAsTable('analytics.w5_covid_19_ADT_Facilities_'+uid)
-    df.toPandas().fillna(0).to_csv(os.getcwd()+'/analysis/output/facilties_county_level_ADT_by_date.csv')
-    print(df.toPandas().head(),len(df.toPandas()))
-
-def getBCL(spark,uid,pwd):
-    print(uid,pwd)
-    sql = '''
-    (select * from ADMIN.V_BCL_MONTHLY_CALL ) a'''
-    #uid = 'abaner02'
-    df = spark \
-            .read \
-            .format("jdbc") \
-            .option("url", "jdbc:netezza://bntzp01z.bcbsma.com:5480/PDWAPPRP") \
-            .option("user", uid) \
-            .option("password", pwd) \
-            .option("driver", "org.netezza.Driver") \
-            .option("dbtable", sql) \
-            .load()
-
-    df.createOrReplaceTempView('BCL_DATA')
-    df.write.mode("overwrite").format('parquet').saveAsTable('analytics.w5_BLUE_CARE_LINE_Netezza_'+uid)
-    #df_p = df.toPandas()
-    #print(len(df_p))
-    #print(df_p.head())
-    print(df.show())
-
-
 if __name__ == "__main__":
-    pwd = getpass.getpass("Enter LAN pwd: ")
+    '''pwd = getpass.getpass("Enter LAN pwd: ")
     args = init_parser()
     # Phasing out netezza
     spark = SparkSession \
@@ -683,7 +512,7 @@ if __name__ == "__main__":
             .config("spark.executor.cores", "5") \
             .getOrCreate()
 
-    spark.sparkContext.setLogLevel("ERROR")
+    spark.sparkContext.setLogLevel("ERROR")'''
 
     # get latest data and doc
     curr_date = getLatestQuarantine_doc()
@@ -704,6 +533,5 @@ if __name__ == "__main__":
     #pp.pprint(file_nm)
 
     getMassGovData(file_nm)
-    getADTData(spark,args.lanid,pwd)
-    #getBCL(spark,args.lanid,pwd)
-    spark.stop()
+
+    #spark.stop()
