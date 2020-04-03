@@ -82,12 +82,13 @@ def getLatestQuarantine_doc():
     print(df)
 
     # Get Latest Doc
+    
     url = ''
     data_d = soup.findAll('a')
     print(data_d)
     for row in data_d:
         #if row.text =='Doc' and row['href'].find('/doc/covid-19-cases') != -1:
-        if row.text =='DOC' or (row.text =='Doc' and row['href'].find('/doc/covid-19-cases') != -1):
+        if row.text == 'Dpc' or row.text =='DOC' or (row.text =='Doc' and row['href'].find('/doc/covid-19-cases') != -1):
             url = 'https://www.mass.gov/'+row['href']
             print(url)
 
