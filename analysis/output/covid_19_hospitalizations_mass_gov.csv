@@ -76,3 +76,6 @@
 74,4-03,Patientwashospitalized,966
 75,4-03,Patientwasnothospitalized,3063
 76,4-03,UnderInvestigation,6373
+77,4-04,Patientwashospitalized,1068
+78,4-04,Patientwasnothospitalized,3378
+79,4-04,UnderInvestigation,7290
