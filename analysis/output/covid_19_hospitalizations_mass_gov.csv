@@ -82,3 +82,6 @@
 80,4-05,Patientwashospitalized,1145
 81,4-05,Patientwasnothospitalized,3675
 82,4-05,UnderInvestigation,7680
+83,4-06,Patientwashospitalized,1241
+84,4-06,Patientwasnothospitalized,3942
+85,4-06,UnderInvestigation,8654
