@@ -82,7 +82,7 @@ def getLatestQuarantine_doc():
     print(df)
 
     # Get Latest Doc
-    
+    '''
     url = ''
     data_d = soup.findAll('a')
     print(data_d)
@@ -96,7 +96,7 @@ def getLatestQuarantine_doc():
     print('Downloading file from massgov.com to -->',file)
     opener = urllib.request.URLopener()
     opener.addheader('User-Agent', 'whatever')
-    filename, headers = opener.retrieve(url,file)
+    filename, headers = opener.retrieve(url,file)'''
 
     return curr_date
 
@@ -146,12 +146,13 @@ def read_daily_covid_data(file_x):
     count_tables = 0
     for table in tree.iter(TABLE):
         count_tables = count_tables +1
-        #print(count_tables,'--->',table)
+        print(count_tables,'--->',table)
         for row in table.iter(ROW):
             for cell in row.iter(CELL):
                 data_str = data_str + ' '.join(node.text for node in cell.iter(TEXT)) +'\n'
+                print('&&&&&&&&&&&&&&&&&&&&&&&&&&',file_x)
                 #print(data_str)
-                #print(type(data_str))
+                print(type(data_str)) #decode("utf-8", "replace")
 
     return count_tables,data_str
 
@@ -273,7 +274,14 @@ def get_testing(filedata,dates):
         else:
             print(day,'***---->',tbl_cnt)
             #print(curr.split('Reported Deaths')[1])
-            p1 = curr.split('Reported Deaths')[1].replace(' ','').split('MAStatePublicHealthLaboratory')
+            if day not in ('3-31'):
+                print(day,'*****---->',tbl_cnt)
+                #print(filedata)
+                #print(curr)
+                p1 = curr.split('Reported Deaths')[1].replace(' ','').split('MAStatePublicHealthLaboratory')
+            else:
+                print(day,'****---->',tbl_cnt)
+                p1 = curr.split('Reported Deaths')[1].replace(' ','').split('MAStatePublicHealthLaboratory')
             if len(p1) > 1:
                 p1 =p1[2]
             else:
@@ -528,7 +536,7 @@ if __name__ == "__main__":
         file_nm[dt] = {}
         file_nm[dt]['file'] = name
         tbl_cnt, data = read_daily_covid_data(name)
-        file_nm[dt]['data'] = data
+        file_nm[dt]['data'] = str(data)
         file_nm[dt]['tbl_cnt'] = tbl_cnt
 
     #pp.pprint(file_nm)
