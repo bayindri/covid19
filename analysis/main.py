@@ -79,6 +79,7 @@ def getLatestQuarantine_doc():
     df_existing = df_existing[df_existing['Day'] != curr_date]
     df = df_existing.append(df)
     df.to_csv(os.getcwd()+'/analysis/output/covid_19_quarantine_mass_gov.csv')
+    df.to_csv(os.getcwd()+'/analysis/input/covid_19_quarantine_mass_gov.csv')
     print(df)
 
     # Get Latest Doc
