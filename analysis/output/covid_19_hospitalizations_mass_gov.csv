@@ -97,3 +97,6 @@
 95,4-10,Patientwashospitalized,1956
 96,4-10,Patientwasnothospitalized,5731
 97,4-10,UnderInvestigation,13287
+98,4-11,Patientwashospitalized,2120
+99,4-11,Patientwasnothospitalized,6053
+100,4-11,UnderInvestigation,14687
