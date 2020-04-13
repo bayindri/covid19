@@ -103,3 +103,6 @@
 101,4-12,Patientwashospitalized,2235
 102,4-12,Patientwasnothospitalized,6455
 103,4-12,UnderInvestigation,16785
+104,4-13,Patientwashospitalized,2340
+105,4-13,Patientwasnothospitalized,6678
+106,4-13,UnderInvestigation,17849
