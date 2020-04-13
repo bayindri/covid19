@@ -100,3 +100,6 @@
 98,4-11,Patientwashospitalized,2120
 99,4-11,Patientwasnothospitalized,6053
 100,4-11,UnderInvestigation,14687
+101,4-12,Patientwashospitalized,2235
+102,4-12,Patientwasnothospitalized,6455
+103,4-12,UnderInvestigation,16785
